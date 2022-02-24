@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sbk8s-demo
+spec:
+  selector:
+    matchLabels:
+      app: spring-boot-k8s-demo
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: spring-boot-k8s-demo
+    spec:
+      containers:
+        - name: sbk8s-demo
+          image: sharath1981/sbk8sd
+          ports:
+            - containerPort: 8080
+          env: # Setting Enviornmental Variables
+            - name: DB_HOST # Setting Database host address from configMap
+              valueFrom:
+                configMapKeyRef:
+                  name: db-config
+                  key: dbhost
+
+            - name: DB_NAME # Setting Database name address from configMap
+              valueFrom:
+                configMapKeyRef:
+                  name: db-config
+                  key: dbname
+
+            - name: DB_USERNAME # Setting Database username address from secret
+              valueFrom:
+                secretKeyRef:
+                  name: db-config
+                  key: username
+
+            - name: DB_PASSWORD # Setting Database password from secret
+              valueFrom:
+                secretKeyRef:
+                  name: db-config
+                  key: password
+---
+apiVersion: v1 # Kubernetes API version
+kind: Service # Kubernetes resource kind we are creating
+metadata: # Metadata of the resource kind we are creating
+  name: sbk8s-demo-svc
+spec:
+  selector:
+    app: spring-boot-k8s-demo
+  ports:
+    - protocol: "TCP"
+      port: 8080 # The port that the service is running on in the cluster
+      targetPort: 8080 # The port exposed by the service
+  type: NodePort # type of the service.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-config
+data:
+  dbhost: 127.0.0.1
+  dbname: TEST_DB
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-config
+data:
+  username: cm9vdA==
+  password: cm9vdA==
